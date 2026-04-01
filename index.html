@@ -45,14 +45,34 @@
       <h1 class="text-lg font-semibold tracking-tight text-white">Mixtime</h1>
       <span class="text-xs text-zinc-500">DJ Set Duration Calculator</span>
     </div>
-    <label class="cursor-pointer bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm px-3 py-1.5 rounded transition">
+    <label x-show="fileLoaded" class="cursor-pointer bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-sm px-3 py-1.5 rounded transition">
       Load Collection XML
       <input type="file" accept=".xml" class="hidden" @change="loadFile($event)">
     </label>
   </header>
 
+  <!-- Onboarding: prominent load button when no file loaded -->
+  <template x-if="!fileLoaded">
+    <div class="flex-1 flex flex-col items-center justify-center p-8"
+         @dragover.prevent="dragOver = true"
+         @dragleave.self="dragOver = false"
+         @drop.prevent="dropFile($event)">
+      <div class="flex flex-col items-center justify-center gap-4 w-full max-w-sm border-2 border-dashed rounded-xl p-12 transition-colors duration-150"
+           :class="dragOver ? 'border-rb-accent bg-rb-accent/5' : 'border-zinc-700 bg-transparent'">
+        <svg class="w-16 h-16 transition-colors duration-150" :class="dragOver ? 'text-rb-accent' : 'text-zinc-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.338-2.32 3.75 3.75 0 013.572 5.482A4.5 4.5 0 0118.75 19.5H6.75z"/>
+        </svg>
+        <p class="text-zinc-400 text-sm text-center" x-text="dragOver ? 'Drop to load' : 'Drag & drop your rekordbox XML here, or'"></p>
+        <label class="cursor-pointer bg-rb-accent hover:bg-green-400 text-zinc-900 font-semibold text-base px-6 py-3 rounded-lg transition shadow-lg shadow-rb-accent/20" x-show="!dragOver">
+          Browse for file
+          <input type="file" accept=".xml" class="hidden" @change="loadFile($event)">
+        </label>
+      </div>
+    </div>
+  </template>
+
   <!-- Main area -->
-  <div class="flex flex-1 min-h-0">
+  <div class="flex flex-1 min-h-0" x-show="fileLoaded">
 
     <!-- Sidebar: Playlist tree -->
     <aside class="w-56 shrink-0 bg-rb-sidebar border-r border-rb-border flex flex-col">
@@ -120,7 +140,7 @@
             Playlist is empty.
           </div>
         </template>
-        <template x-for="(t, i) in currentTracks" :key="t.id">
+        <template x-for="(t, i) in currentTracks" :key="i">
           <div class="flex items-center px-2 h-9 text-sm border-b border-rb-border/50 hover:bg-rb-rowHover transition-colors cursor-default"
                :class="i % 2 === 0 ? 'bg-rb-row' : 'bg-rb-rowAlt'">
             <div class="w-8 shrink-0 flex justify-center">
@@ -153,7 +173,7 @@
   </div>
 
   <!-- Footer: Summary -->
-  <footer class="bg-rb-header border-t border-rb-border px-4 py-2 flex items-center gap-6 text-sm shrink-0">
+  <footer x-show="fileLoaded" class="bg-rb-header border-t border-rb-border px-4 py-2 flex items-center gap-6 text-sm shrink-0">
     <div class="text-zinc-400">
       Selected: <span class="text-white font-medium" x-text="selectedTrackIds.length">0</span> tracks
     </div>
@@ -179,6 +199,7 @@
     document.addEventListener('alpine:init', () => {
       Alpine.data('app', () => ({
         fileLoaded: false,
+        dragOver: false,
         tracks: {},
         flatTree: [],
         selectedPlaylist: null,
@@ -189,6 +210,17 @@
         loadFile(event) {
           const file = event.target.files[0];
           if (!file) return;
+          this.readFile(file);
+        },
+
+        dropFile(event) {
+          this.dragOver = false;
+          const file = event.dataTransfer.files[0];
+          if (!file) return;
+          this.readFile(file);
+        },
+
+        readFile(file) {
           const reader = new FileReader();
           reader.onload = (e) => {
             this.parseXml(e.target.result);
