@@ -261,14 +261,16 @@
           const totalTime = parseFloat(el.getAttribute('TotalTime')) || 0;
           const avgBpm = parseFloat(el.getAttribute('AverageBpm')) || 0;
 
-          // Parse position marks (Type="0" = cue point)
+          // Parse position marks.
+          // Type="0" = cue point, Type="4" = loop point.
+          // In both cases: Num="-1" = memory marker, Num="0..7" = hot marker.
           const marks = el.querySelectorAll('POSITION_MARK');
           const memoryCues = [];
           const hotCues = [];
 
           marks.forEach(m => {
             const type = m.getAttribute('Type');
-            if (type !== '0') return;
+            if (type !== '0' && type !== '4') return;
             const start = parseFloat(m.getAttribute('Start'));
             if (isNaN(start)) return;
             const num = parseInt(m.getAttribute('Num'), 10);
