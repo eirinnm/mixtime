@@ -2,9 +2,13 @@
 
 A browser-based DJ set duration calculator for [rekordbox](https://rekordbox.com/) collections.
 
+**[Open Mixtime → eirinnm.github.io/mixtime](https://eirinnm.github.io/mixtime/)**
+
+No installation required — runs entirely in your browser.
+
 ## Usage
 
-1. Open `index.html` in any modern web browser — no installation or internet connection required.
+1. Go to **[eirinnm.github.io/mixtime](https://eirinnm.github.io/mixtime/)**.
 2. Export your rekordbox collection: **File → Export Collection in xml format**.
 3. Drag and drop the exported XML file onto the Mixtime window, or click **Browse for file**.
 4. Browse your playlists in the left panel and click one to view its tracks.
