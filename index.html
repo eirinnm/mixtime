@@ -69,6 +69,11 @@
          @dragover.prevent="dragOver = true"
          @dragleave.self="dragOver = false"
          @drop.prevent="dropFile($event)">
+      <div class="max-w-lg text-center mb-8">
+        <h2 class="text-2xl font-semibold text-white mb-3">Mixtime: A tool for estimating DJ set durations.</h2>
+        <p class="text-zinc-300">Uses the cue points saved in your rekordbox collection.</p>
+        <p class="text-sm text-zinc-400 mt-3">Your collection stays on your device - nothing is uploaded.</p>
+      </div>
       <div class="flex flex-col items-center justify-center gap-4 w-full max-w-sm border-2 border-dashed rounded-xl p-12 transition-colors duration-150"
            :class="dragOver ? 'border-rb-accent bg-rb-accent/5' : 'border-zinc-700 bg-transparent'">
         <svg class="w-16 h-16 transition-colors duration-150" :class="dragOver ? 'text-rb-accent' : 'text-zinc-600'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -87,7 +92,7 @@
   <div class="flex flex-1 min-h-0" x-show="fileLoaded">
 
     <!-- Sidebar: Playlist tree -->
-    <aside class="w-56 shrink-0 bg-rb-sidebar border-r border-rb-border flex flex-col">
+    <aside x-show="fileLoaded" class="w-40 lg:w-56 shrink-0 bg-rb-sidebar border-r border-rb-border flex flex-col">
       <div class="px-3 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider border-b border-rb-border">Playlists</div>
       <div class="flex-1 overflow-y-auto py-1">
         <template x-if="!fileLoaded">
@@ -123,7 +128,12 @@
     </aside>
 
     <!-- Main: Track table -->
-    <main class="flex-1 flex flex-col min-w-0">
+    <main x-show="fileLoaded" class="flex-1 flex flex-col min-w-0 overflow-x-auto">
+      <div class="px-3 py-2 border-b border-rb-border flex items-center justify-between gap-2">
+        <span class="text-sm text-zinc-400" x-text="selectedPlaylist ? selectedPlaylist.name : 'Collection'"></span>
+        <button type="button" @click="addToSet()" :disabled="!selectedTracks.length"
+                class="bg-rb-accent text-zinc-900 text-sm font-semibold px-3 py-1 rounded disabled:opacity-40">Add selected to set</button>
+      </div>
       <!-- Table header -->
       <div class="bg-rb-header border-b border-rb-border px-2 flex items-center text-xs font-medium text-zinc-400 uppercase tracking-wider shrink-0 h-8">
         <div class="w-8 shrink-0 flex justify-center">
@@ -205,6 +215,55 @@
         </template>
       </div>
     </main>
+
+    <aside class="w-80 shrink-0 bg-rb-sidebar border-l border-rb-border flex flex-col" aria-label="Set builder">
+      <div class="px-3 py-2 border-b border-rb-border">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Set builder</h2>
+          <button type="button" @click="clearSet()" :disabled="!setlist.length" class="text-xs text-zinc-400 disabled:opacity-40">Clear set</button>
+        </div>
+        <p class="text-xs text-zinc-500 mt-1">Drag the handle to reorder, or use the arrow buttons.</p>
+        <p x-show="storageError" x-text="storageError" role="status" class="text-xs text-amber-400 mt-1"></p>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <p x-show="!setlist.length" class="p-4 text-sm text-zinc-500">Select tracks from a playlist and add them to your set.</p>
+        <template x-for="(item, i) in setlist" :key="item.key">
+          <div class="p-3 border-b border-rb-border" :class="draggedKey === item.key ? 'opacity-50' : ''"
+               @dragover.prevent="$event.dataTransfer.dropEffect = 'move'" @drop.prevent.stop="dropSetTrack(item.key)">
+            <div class="flex items-center gap-2">
+              <button type="button" draggable="true" @dragstart="startSetDrag($event, item.key)" @dragend="draggedKey = null"
+                      class="cursor-grab text-zinc-500" :aria-label="'Drag ' + item.track.name">⠿</button>
+              <span class="text-xs text-zinc-500" x-text="i + 1"></span>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm truncate" x-text="item.track.name"></div>
+                <div class="text-xs text-zinc-400 truncate" x-text="item.track.artist"></div>
+              </div>
+              <button type="button" @click="moveSetTrack(item.key, -1)" :disabled="i === 0" :aria-label="'Move ' + item.track.name + ' up'" class="disabled:opacity-30">↑</button>
+              <button type="button" @click="moveSetTrack(item.key, 1)" :disabled="i === setlist.length - 1" :aria-label="'Move ' + item.track.name + ' down'" class="disabled:opacity-30">↓</button>
+              <button type="button" @click="removeSetTrack(item.key)" :aria-label="'Remove ' + item.track.name" class="text-zinc-400">×</button>
+            </div>
+            <div class="flex items-center justify-between gap-2 mt-2 text-xs">
+              <label class="text-zinc-400">Played BPM
+                <input type="number" min="1" step="0.1" :value="item.playedBpm || ''" @change="setPlayedBpm(item.key, $event.target.value)"
+                       :aria-label="'Played BPM for ' + item.track.name" placeholder="Native"
+                       class="w-20 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
+              </label>
+              <span class="tabular-nums" x-text="formatTime(setTrackDuration(item))"></span>
+            </div>
+            <p x-show="!item.track.avgBpm" class="mt-1 text-xs text-zinc-500">No source BPM; duration stays at native tempo.</p>
+          </div>
+        </template>
+      </div>
+      <div class="p-3 border-t border-rb-border text-sm">
+        <div class="flex justify-between mb-2"><span x-text="setlist.length + ' tracks'"></span><strong x-text="formatTime(setDuration)"></strong></div>
+        <div class="flex gap-2">
+          <select x-model="exportFormat" aria-label="Export format" class="flex-1 bg-zinc-800 rounded px-2 py-1">
+            <option value="csv">CSV</option><option value="txt">Plain text</option>
+          </select>
+          <button type="button" @click="exportSet()" :disabled="!setlist.length" class="bg-rb-accent text-zinc-900 font-semibold px-3 py-1 rounded disabled:opacity-40">Export</button>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <!-- Footer: Summary -->
@@ -240,6 +299,137 @@
         selectedPlaylist: null,
         selectedTrackIds: [],
         performanceBpm: 128,
+        setlist: [],
+        nextSetKey: 0,
+        draggedKey: null,
+        exportFormat: 'csv',
+        storageError: '',
+
+        init() {
+          try {
+            const saved = JSON.parse(localStorage.getItem('mixtime-set-v1') || '[]');
+            if (!Array.isArray(saved)) throw new Error('Invalid saved set');
+            this.setlist = saved.map(item => {
+              const t = item.track;
+              if (!t || typeof t.id !== 'string' || typeof t.name !== 'string' || typeof t.artist !== 'string' ||
+                  ![t.totalTime, t.activeDuration, t.avgBpm].every(n => Number.isFinite(n) && n >= 0) ||
+                  t.activeDuration > t.totalTime) throw new Error('Invalid saved track');
+              return { key: this.nextSetKey++, track: { id: t.id, name: t.name, artist: t.artist,
+                totalTime: t.totalTime, activeDuration: t.activeDuration, avgBpm: t.avgBpm },
+                playedBpm: Number.isFinite(item.playedBpm) && item.playedBpm > 0 ? item.playedBpm : null };
+            });
+          } catch {
+            this.storageError = 'Saved set could not be restored. Browser storage may be unavailable.';
+          }
+        },
+
+        saveSet() {
+          try {
+            localStorage.setItem('mixtime-set-v1', JSON.stringify(this.setlist));
+            this.storageError = '';
+          } catch {
+            this.storageError = 'Set could not be saved. Changes may be lost on refresh.';
+          }
+        },
+
+        addToSet() {
+          this.selectedTracks.forEach(t => {
+            this.setlist.push({ key: this.nextSetKey++, track: { id: t.id, name: t.name, artist: t.artist,
+              totalTime: t.totalTime, activeDuration: t.activeDuration, avgBpm: t.avgBpm },
+              playedBpm: Number.isFinite(this.performanceBpm) && this.performanceBpm > 0 ? this.performanceBpm : null });
+          });
+          this.selectedTrackIds = [];
+          this.saveSet();
+        },
+
+        removeSetTrack(key) {
+          this.setlist = this.setlist.filter(item => item.key !== key);
+          this.saveSet();
+        },
+
+        clearSet() {
+          if (!confirm('Clear all tracks from this set?')) return;
+          this.setlist = [];
+          this.saveSet();
+        },
+
+        setPlayedBpm(key, value) {
+          const item = this.setlist.find(item => item.key === key);
+          if (!item) return;
+          const bpm = Number(value);
+          item.playedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : null;
+          this.saveSet();
+        },
+
+        moveSetTrack(key, offset) {
+          const from = this.setlist.findIndex(item => item.key === key);
+          const to = from + offset;
+          if (from < 0 || to < 0 || to >= this.setlist.length) return;
+          this.setlist.splice(to, 0, this.setlist.splice(from, 1)[0]);
+          this.saveSet();
+        },
+
+        startSetDrag(event, key) {
+          this.draggedKey = key;
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(key));
+        },
+
+        dropSetTrack(targetKey) {
+          const from = this.setlist.findIndex(item => item.key === this.draggedKey);
+          const to = this.setlist.findIndex(item => item.key === targetKey);
+          this.draggedKey = null;
+          if (from < 0 || to < 0 || from === to) return;
+          this.setlist.splice(to, 0, this.setlist.splice(from, 1)[0]);
+          this.saveSet();
+        },
+
+        setTrackDuration(item) {
+          const t = item.track;
+          return t.avgBpm > 0 && item.playedBpm > 0 ? t.activeDuration * t.avgBpm / item.playedBpm : t.activeDuration;
+        },
+
+        get setDuration() {
+          return this.setlist.reduce((sum, item) => sum + this.setTrackDuration(item), 0);
+        },
+
+        buildSetExport(format) {
+          let elapsed = 0;
+          const rows = this.setlist.map((item, i) => {
+            const duration = this.setTrackDuration(item);
+            const row = [i + 1, item.track.name, item.track.artist, item.track.avgBpm || '', item.playedBpm || '',
+              this.formatTime(duration), this.formatTime(elapsed)];
+            elapsed += duration;
+            return row;
+          });
+          if (format === 'csv') {
+            const escape = value => {
+              let text = String(value);
+              // Prevent track metadata being interpreted as spreadsheet formulas.
+              if (/^[\s]*[=+@-]/.test(text)) text = "'" + text;
+              return '"' + text.replace(/"/g, '""') + '"';
+            };
+            return [['Order', 'Title', 'Artist', 'Native BPM', 'Played BPM', 'Duration', 'Start'], ...rows]
+              .map(row => row.map(escape).join(',')).join('\r\n');
+          }
+          const line = value => String(value).replace(/[\r\n\t]/g, ' ');
+          return ['Mixtime setlist', ...rows.map(row => `${row[0]}. ${line(row[1])} — ${line(row[2])} | BPM: ${row[4] || 'native'} | ${row[5]} | Start: ${row[6]}`),
+            '', `Total: ${this.formatTime(elapsed)} (${rows.length} tracks)`].join('\n');
+        },
+
+        exportSet() {
+          if (!this.setlist.length) return;
+          const format = this.exportFormat === 'csv' ? 'csv' : 'txt';
+          const blob = new Blob([this.buildSetExport(format)], { type: format === 'csv' ? 'text/csv;charset=utf-8' : 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `mixtime-set.${format}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
 
         // ─── File loading ──────────────────────────────
         loadFile(event) {
