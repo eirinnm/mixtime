@@ -278,9 +278,10 @@
                          class="w-16 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
                   <div class="flex items-center gap-1 shrink-0">
                     <button type="button" @click="useNativeBpm(item.key)" :disabled="item.playedBpm === null"
-                            class="px-1.5 py-0.5 rounded border border-rb-border text-zinc-300 hover:bg-zinc-700/60 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition"
-                            title="Reset to the track's native BPM"
-                            :aria-label="'Reset ' + item.track.name + ' to its native BPM'">Native</button>
+                            class="px-1.5 py-0.5 rounded border border-rb-border text-zinc-300 hover:bg-zinc-700/60 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition tabular-nums"
+                            :title="'Reset to the track\'s native BPM (' + nativeBpmLabel(item.track) + ')'"
+                            :aria-label="'Reset ' + item.track.name + ' to its native BPM ' + nativeBpmLabel(item.track)"
+                            x-text="nativeBpmLabel(item.track)"></button>
                     <button type="button" @click="usePerformanceBpm(item.key)" :disabled="!(performanceBpm > 0)"
                             class="px-1.5 py-0.5 rounded border border-rb-border text-zinc-300 hover:bg-zinc-700/60 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition tabular-nums"
                             :title="'Set to the performance BPM (' + performanceBpm + ')'"
@@ -410,6 +411,10 @@
 
         usePerformanceBpm(key) {
           this.setPlayedBpm(key, this.performanceBpm);
+        },
+
+        nativeBpmLabel(track) {
+          return track.avgBpm > 0 ? String(Math.round(track.avgBpm * 10) / 10) : '—';
         },
 
         moveSetTrack(key, offset) {

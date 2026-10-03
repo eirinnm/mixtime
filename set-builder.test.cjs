@@ -101,6 +101,10 @@ test('preset buttons switch an entry between native and performance BPM', () => 
   app.usePerformanceBpm(0);
   assert.equal(app.setlist[0].playedBpm, null);
 
+  assert.equal(app.nativeBpmLabel({ avgBpm: 136 }), '136');
+  assert.equal(app.nativeBpmLabel({ avgBpm: 130.12 }), '130.1');
+  assert.equal(app.nativeBpmLabel({ avgBpm: 0 }), '—');
+
   const aside = dom.window.document.querySelector('aside[aria-label="Set builder"]');
   const markup = [...aside.querySelectorAll('template')].map(t => t.innerHTML).join('');
   assert.match(markup, /useNativeBpm\(item\.key\)/);
