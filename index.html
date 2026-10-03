@@ -271,13 +271,23 @@
                   <button type="button" @click="moveSetTrack(item.key, 1)" :disabled="i === setlist.length - 1" :aria-label="'Move ' + item.track.name + ' down'" class="disabled:opacity-30">↓</button>
                   <button type="button" @click="removeSetTrack(item.key)" :aria-label="'Remove ' + item.track.name" class="text-zinc-400">×</button>
                 </div>
-                <div class="flex items-center justify-between gap-2 mt-2 text-xs">
-                  <label class="text-zinc-400">Played BPM
-                    <input type="number" min="1" step="0.1" :value="item.playedBpm || ''" @change="setPlayedBpm(item.key, $event.target.value)"
-                           :aria-label="'Played BPM for ' + item.track.name" placeholder="Native"
-                           class="w-20 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
-                  </label>
-                  <span class="tabular-nums" x-text="formatTime(setTrackDuration(item))"></span>
+                <div class="flex items-center gap-2 mt-2 text-xs">
+                  <label class="shrink-0 text-zinc-400">Played BPM</label>
+                  <input type="number" min="1" step="0.1" :value="item.playedBpm || ''" @change="setPlayedBpm(item.key, $event.target.value)"
+                         :aria-label="'Played BPM for ' + item.track.name" placeholder="Native"
+                         class="w-16 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" @click="useNativeBpm(item.key)" :disabled="item.playedBpm === null"
+                            class="px-1.5 py-0.5 rounded border border-rb-border text-zinc-300 hover:bg-zinc-700/60 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition"
+                            title="Reset to the track's native BPM"
+                            :aria-label="'Reset ' + item.track.name + ' to its native BPM'">Native</button>
+                    <button type="button" @click="usePerformanceBpm(item.key)" :disabled="!(performanceBpm > 0)"
+                            class="px-1.5 py-0.5 rounded border border-rb-border text-zinc-300 hover:bg-zinc-700/60 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition tabular-nums"
+                            :title="'Set to the performance BPM (' + performanceBpm + ')'"
+                            :aria-label="'Set ' + item.track.name + ' to the performance BPM ' + performanceBpm"
+                            x-text="performanceBpm > 0 ? performanceBpm : 'Perf'"></button>
+                  </div>
+                  <span class="ml-auto tabular-nums" x-text="formatTime(setTrackDuration(item))"></span>
                 </div>
                 <p x-show="!item.track.avgBpm" class="mt-1 text-xs text-zinc-500">No source BPM; duration stays at native tempo.</p>
               </div>
@@ -392,6 +402,14 @@
           const bpm = Number(value);
           item.playedBpm = Number.isFinite(bpm) && bpm > 0 ? bpm : null;
           this.saveSet();
+        },
+
+        useNativeBpm(key) {
+          this.setPlayedBpm(key, null);
+        },
+
+        usePerformanceBpm(key) {
+          this.setPlayedBpm(key, this.performanceBpm);
         },
 
         moveSetTrack(key, offset) {

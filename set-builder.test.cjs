@@ -76,6 +76,37 @@ test('set builder panel starts collapsed and opens when tracks are added', () =>
   assert.deepEqual(toggles, ['Collapse set builder', 'Expand set builder']);
 });
 
+test('preset buttons switch an entry between native and performance BPM', () => {
+  const { app, dom } = setup();
+  app.tracks = { '1': track };
+  app.performanceBpm = 140;
+  app.selectedTrackIds = ['1'];
+  app.addToSet();
+  assert.equal(app.setlist[0].playedBpm, 140);
+  assert.equal(app.setDuration, 240 * 120 / 140);
+
+  app.useNativeBpm(0);
+  assert.equal(app.setlist[0].playedBpm, null);
+  assert.equal(app.setDuration, 240);
+
+  app.performanceBpm = 150;
+  app.usePerformanceBpm(0);
+  assert.equal(app.setlist[0].playedBpm, 150);
+  assert.equal(app.setDuration, 240 * 120 / 150);
+
+  app.usePerformanceBpm(999);
+  assert.equal(app.setlist.length, 1);
+
+  app.performanceBpm = 0;
+  app.usePerformanceBpm(0);
+  assert.equal(app.setlist[0].playedBpm, null);
+
+  const aside = dom.window.document.querySelector('aside[aria-label="Set builder"]');
+  const markup = [...aside.querySelectorAll('template')].map(t => t.innerHTML).join('');
+  assert.match(markup, /useNativeBpm\(item\.key\)/);
+  assert.match(markup, /usePerformanceBpm\(item\.key\)/);
+});
+
 test('blank/invalid played BPM and missing source BPM use native duration', () => {
   const { app } = setup();
   app.tracks = { '1': track };
