@@ -216,53 +216,84 @@
       </div>
     </main>
 
-    <aside class="w-80 shrink-0 bg-rb-sidebar border-l border-rb-border flex flex-col" aria-label="Set builder">
-      <div class="px-3 py-2 border-b border-rb-border">
-        <div class="flex items-center justify-between">
-          <h2 class="font-semibold">Set builder</h2>
-          <button type="button" @click="clearSet()" :disabled="!setlist.length" class="text-xs text-zinc-400 disabled:opacity-40">Clear set</button>
+    <aside class="shrink-0 bg-rb-sidebar border-l border-rb-border flex flex-col overflow-hidden transition-[width] duration-200 ease-out"
+           :class="setPanelOpen ? 'w-80' : 'w-10'" aria-label="Set builder">
+
+      <!-- Collapsed rail -->
+      <template x-if="!setPanelOpen">
+        <div class="w-10 shrink-0 flex flex-col items-center gap-2 py-2">
+          <button type="button" @click="setPanelOpen = true"
+                  class="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 transition"
+                  title="Expand set builder" aria-label="Expand set builder">
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+          <span x-show="setlist.length" x-text="setlist.length" class="text-xs tabular-nums text-rb-accent"></span>
+          <span class="text-xs uppercase tracking-wider text-zinc-500 select-none" style="writing-mode: vertical-rl;">Set builder</span>
         </div>
-        <p class="text-xs text-zinc-500 mt-1">Drag the handle to reorder, or use the arrow buttons.</p>
-        <p x-show="storageError" x-text="storageError" role="status" class="text-xs text-amber-400 mt-1"></p>
-      </div>
-      <div class="flex-1 overflow-y-auto">
-        <p x-show="!setlist.length" class="p-4 text-sm text-zinc-500">Select tracks from a playlist and add them to your set.</p>
-        <template x-for="(item, i) in setlist" :key="item.key">
-          <div class="p-3 border-b border-rb-border" :class="draggedKey === item.key ? 'opacity-50' : ''"
-               @dragover.prevent="$event.dataTransfer.dropEffect = 'move'" @drop.prevent.stop="dropSetTrack(item.key)">
-            <div class="flex items-center gap-2">
-              <button type="button" draggable="true" @dragstart="startSetDrag($event, item.key)" @dragend="draggedKey = null"
-                      class="cursor-grab text-zinc-500" :aria-label="'Drag ' + item.track.name">⠿</button>
-              <span class="text-xs text-zinc-500" x-text="i + 1"></span>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm truncate" x-text="item.track.name"></div>
-                <div class="text-xs text-zinc-400 truncate" x-text="item.track.artist"></div>
+      </template>
+
+      <!-- Expanded panel -->
+      <template x-if="setPanelOpen">
+        <div class="w-80 shrink-0 flex-1 min-h-0 flex flex-col">
+          <div class="px-3 py-2 border-b border-rb-border">
+            <div class="flex items-center justify-between">
+              <h2 class="font-semibold">Set builder</h2>
+              <div class="flex items-center gap-2">
+                <button type="button" @click="clearSet()" :disabled="!setlist.length" class="text-xs text-zinc-400 disabled:opacity-40">Clear set</button>
+                <button type="button" @click="setPanelOpen = false"
+                        class="p-1 rounded text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/50 transition"
+                        title="Collapse set builder" aria-label="Collapse set builder">
+                  <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/>
+                  </svg>
+                </button>
               </div>
-              <button type="button" @click="moveSetTrack(item.key, -1)" :disabled="i === 0" :aria-label="'Move ' + item.track.name + ' up'" class="disabled:opacity-30">↑</button>
-              <button type="button" @click="moveSetTrack(item.key, 1)" :disabled="i === setlist.length - 1" :aria-label="'Move ' + item.track.name + ' down'" class="disabled:opacity-30">↓</button>
-              <button type="button" @click="removeSetTrack(item.key)" :aria-label="'Remove ' + item.track.name" class="text-zinc-400">×</button>
             </div>
-            <div class="flex items-center justify-between gap-2 mt-2 text-xs">
-              <label class="text-zinc-400">Played BPM
-                <input type="number" min="1" step="0.1" :value="item.playedBpm || ''" @change="setPlayedBpm(item.key, $event.target.value)"
-                       :aria-label="'Played BPM for ' + item.track.name" placeholder="Native"
-                       class="w-20 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
-              </label>
-              <span class="tabular-nums" x-text="formatTime(setTrackDuration(item))"></span>
-            </div>
-            <p x-show="!item.track.avgBpm" class="mt-1 text-xs text-zinc-500">No source BPM; duration stays at native tempo.</p>
+            <p class="text-xs text-zinc-500 mt-1">Drag the handle to reorder, or use the arrow buttons.</p>
+            <p x-show="storageError" x-text="storageError" role="status" class="text-xs text-amber-400 mt-1"></p>
           </div>
-        </template>
-      </div>
-      <div class="p-3 border-t border-rb-border text-sm">
-        <div class="flex justify-between mb-2"><span x-text="setlist.length + ' tracks'"></span><strong x-text="formatTime(setDuration)"></strong></div>
-        <div class="flex gap-2">
-          <select x-model="exportFormat" aria-label="Export format" class="flex-1 bg-zinc-800 rounded px-2 py-1">
-            <option value="csv">CSV</option><option value="txt">Plain text</option>
-          </select>
-          <button type="button" @click="exportSet()" :disabled="!setlist.length" class="bg-rb-accent text-zinc-900 font-semibold px-3 py-1 rounded disabled:opacity-40">Export</button>
+          <div class="flex-1 overflow-y-auto">
+            <p x-show="!setlist.length" class="p-4 text-sm text-zinc-500">Select tracks from a playlist and add them to your set.</p>
+            <template x-for="(item, i) in setlist" :key="item.key">
+              <div class="p-3 border-b border-rb-border" :class="draggedKey === item.key ? 'opacity-50' : ''"
+                   @dragover.prevent="$event.dataTransfer.dropEffect = 'move'" @drop.prevent.stop="dropSetTrack(item.key)">
+                <div class="flex items-center gap-2">
+                  <button type="button" draggable="true" @dragstart="startSetDrag($event, item.key)" @dragend="draggedKey = null"
+                          class="cursor-grab text-zinc-500" :aria-label="'Drag ' + item.track.name">⠿</button>
+                  <span class="text-xs text-zinc-500" x-text="i + 1"></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm truncate" x-text="item.track.name"></div>
+                    <div class="text-xs text-zinc-400 truncate" x-text="item.track.artist"></div>
+                  </div>
+                  <button type="button" @click="moveSetTrack(item.key, -1)" :disabled="i === 0" :aria-label="'Move ' + item.track.name + ' up'" class="disabled:opacity-30">↑</button>
+                  <button type="button" @click="moveSetTrack(item.key, 1)" :disabled="i === setlist.length - 1" :aria-label="'Move ' + item.track.name + ' down'" class="disabled:opacity-30">↓</button>
+                  <button type="button" @click="removeSetTrack(item.key)" :aria-label="'Remove ' + item.track.name" class="text-zinc-400">×</button>
+                </div>
+                <div class="flex items-center justify-between gap-2 mt-2 text-xs">
+                  <label class="text-zinc-400">Played BPM
+                    <input type="number" min="1" step="0.1" :value="item.playedBpm || ''" @change="setPlayedBpm(item.key, $event.target.value)"
+                           :aria-label="'Played BPM for ' + item.track.name" placeholder="Native"
+                           class="w-20 bg-zinc-800 border border-rb-border rounded px-2 py-1 text-zinc-100">
+                  </label>
+                  <span class="tabular-nums" x-text="formatTime(setTrackDuration(item))"></span>
+                </div>
+                <p x-show="!item.track.avgBpm" class="mt-1 text-xs text-zinc-500">No source BPM; duration stays at native tempo.</p>
+              </div>
+            </template>
+          </div>
+          <div class="p-3 border-t border-rb-border text-sm">
+            <div class="flex justify-between mb-2"><span x-text="setlist.length + ' tracks'"></span><strong x-text="formatTime(setDuration)"></strong></div>
+            <div class="flex gap-2">
+              <select x-model="exportFormat" aria-label="Export format" class="flex-1 bg-zinc-800 rounded px-2 py-1">
+                <option value="csv">CSV</option><option value="txt">Plain text</option>
+              </select>
+              <button type="button" @click="exportSet()" :disabled="!setlist.length" class="bg-rb-accent text-zinc-900 font-semibold px-3 py-1 rounded disabled:opacity-40">Export</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
     </aside>
   </div>
 
@@ -304,6 +335,7 @@
         draggedKey: null,
         exportFormat: 'csv',
         storageError: '',
+        setPanelOpen: false,
 
         init() {
           try {
@@ -338,6 +370,7 @@
               totalTime: t.totalTime, activeDuration: t.activeDuration, avgBpm: t.avgBpm },
               playedBpm: Number.isFinite(this.performanceBpm) && this.performanceBpm > 0 ? this.performanceBpm : null });
           });
+          if (this.selectedTracks.length) this.setPanelOpen = true;
           this.selectedTrackIds = [];
           this.saveSet();
         },

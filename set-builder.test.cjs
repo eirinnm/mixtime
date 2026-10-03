@@ -23,7 +23,7 @@ function setup(storage = new Map()) {
   vm.runInNewContext(dom.window.document.querySelector('body > script').textContent, context);
   const app = factory();
   app.init();
-  return { app, storage, downloads };
+  return { app, storage, downloads, dom };
 }
 const track = { id: '1', name: 'Track, "One"', artist: 'Artist', totalTime: 300, activeDuration: 240, avgBpm: 120 };
 
@@ -52,6 +52,28 @@ test('adds selections, permits repeated entries, adjusts BPM and persists order'
   assert.equal(restored.setlist.length, 1);
   restored.clearSet();
   assert.equal(setup(storage).app.setlist.length, 0);
+});
+
+test('set builder panel starts collapsed and opens when tracks are added', () => {
+  const { app, dom } = setup();
+  assert.equal(app.setPanelOpen, false);
+  app.tracks = { '1': track };
+  app.addToSet();
+  assert.equal(app.setPanelOpen, false);
+  app.selectedTrackIds = ['1'];
+  app.addToSet();
+  assert.equal(app.setPanelOpen, true);
+  app.setPanelOpen = false;
+  app.selectedTrackIds = ['1'];
+  app.addToSet();
+  assert.equal(app.setPanelOpen, true);
+
+  const aside = dom.window.document.querySelector('aside[aria-label="Set builder"]');
+  const toggles = [...aside.querySelectorAll('template')]
+    .flatMap(t => [...t.content.querySelectorAll('button[aria-label]')])
+    .map(b => b.getAttribute('aria-label'))
+    .sort();
+  assert.deepEqual(toggles, ['Collapse set builder', 'Expand set builder']);
 });
 
 test('blank/invalid played BPM and missing source BPM use native duration', () => {

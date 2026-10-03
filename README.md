@@ -19,10 +19,12 @@ No installation required — runs entirely in your browser.
 
 Select tracks in a playlist, then click **Add selected to set** to append them to the right-hand panel. Add tracks from different playlists; adding the same track again creates a separate set entry. The playlist checkboxes are cleared after adding tracks.
 
+The set builder starts collapsed. It expands the first time you add tracks, and the arrow buttons in the panel header and on the collapsed rail collapse and expand it again at any time. While collapsed, the rail shows how many tracks the set holds.
+
 - Each entry starts with the current **Performance BPM**. Change its **Played BPM** to estimate its active duration at that tempo. Leave it blank to use native tempo. Tracks without source BPM data keep their native active duration.
 - Drag the handle to reorder entries, or use the up/down buttons. Remove individual entries with **×**, or use **Clear set**.
 - The panel shows the set's track count and total adjusted duration. This is separate from the footer, which still summarises the current playlist selection. Transition overlaps are not subtracted.
-- The set entries, their order, metadata and played BPM are saved in this browser's local storage, so they remain available after a refresh. Load a collection XML to reveal the saved set in the builder. The collection itself and playlist checkboxes are not saved. Loading another collection does not change existing set entries; remove and re-add an entry to update its metadata or cue-derived duration.
+- The set entries, their order, metadata and played BPM are saved in this browser's local storage, so they remain available after a refresh. Load a collection XML and expand the panel to reveal the saved set in the builder. The collection itself and playlist checkboxes are not saved. Loading another collection does not change existing set entries; remove and re-add an entry to update its metadata or cue-derived duration.
 - Choose **CSV** or **Plain text**, then click **Export**. Exports follow the set order and include durations and cumulative start times. CSV also includes native and played BPM. All export generation stays in the browser.
 
 Browser storage is specific to this site and browser; private browsing, storage restrictions or clearing site data can prevent persistence. A warning appears if saving or restoring fails.
